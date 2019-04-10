@@ -155,14 +155,14 @@ then
     if [ ! -d "$OPENHMD_INSTALL_DEST" ];
     then
         echo "[INFO: $MYFILENAME $LINENO] Cloning OpenHMD Lib into $OPENHMD_INSTALL."
-        git clone https://github.com/OpenHMD/OpenHMD.git "$OPENHMD_INSTALL_DEST" 
+        sudo git clone https://github.com/OpenHMD/OpenHMD.git "$OPENHMD_INSTALL_DEST" 
         cd "$OPENHMD_INSTALL_DEST" || exit 1
-        git checkout 4ca169b49ab4ea4bee2a8ea519d9ba8dcf662bd5
-        cmake .
-        make
-        ./autogen.sh
-        ./configure
-        make
+        sudo git checkout 4ca169b49ab4ea4bee2a8ea519d9ba8dcf662bd5
+        sudo cmake .
+        sudo make
+        sudo ./autogen.sh
+        sudo ./configure
+        sudo make
         cd - || exit 1
     else
         echo "[INFO: $MYFILENAME $LINENO] OpenHMD Lib is already cloned, skipping installation."
