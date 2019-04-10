@@ -29,7 +29,7 @@ class AppContext(ApplicationContext):
     password = None
     install_dir = None
     catkin_dir = None
-    current_computer_is_robot = None
+    current_computer_is_base = None
     use_default_net_config = None
     robot_username = None
     robot_password = None
@@ -137,16 +137,16 @@ class AppContext(ApplicationContext):
         item, ok = dialog.getItem(
                      QWidget(),
                      'Select Computer: Robot or Base',
-                     "Are you currently installing on the robot computer?",
-                     ['Yes','No'],
+                     "Which computer are you installing from?",
+                     ['Robot','Base'],
         )
         if ok:
-            if str(item).lower() == "yes":
-                self.current_computer_is_robot = True
-            elif str(item).lower() == "no":
-                self.current_computer_is_robot = False
+            if str(item).lower() == "base":
+                self.current_computer_is_base = True
+            elif str(item).lower() == "robot":
+                self.current_computer_is_base = False
             # We only need the install directory if the user is on the robot
-            if self.current_computer_is_robot is True:
+            if self.current_computer_is_base is False:
                 self.install_directory()
             else:
                 self.catkin_directory()
@@ -329,7 +329,7 @@ class AppContext(ApplicationContext):
         # so the definition overwrites any previous one. We need to check the 
         # current computer because the catkin workspace could be different.
         path_to_bashrc = os.path.join(os.path.expanduser('~'), '.bashrc')
-        if self.current_computer_is_robot is True:
+        if self.current_computer_is_base is False:
             with open(path_to_bashrc, "a") as f:
                 f.write("export ROBOT_CATKIN_PATH={}\n".format(self.catkin_dir))
                 f.write("export ROBOT_PROJECT_CRUNCH_PATH={}\n"\
@@ -338,16 +338,23 @@ class AppContext(ApplicationContext):
             with open(path_to_bashrc, "a") as f:
                 f.write("export BASE_CATKIN_PATH={}\n".format(self.catkin_dir)) 
 
+        # Determine which computer we are on 
+        if self.current_computer_is_base == True:
+            is_base = "y"
+        else:
+            is_base = "n"
 
         # Set up catkin workspace and install dependencies.
         # Script also sets up local hardware configurations for
         # Vive and OpenHMD.
         # Bash arguments are passed in via a dictionary and must match the
         # command line arguments of the script.
+        # We pass in is_base to skip the OpenHMD installation if we are on
+        # the robot computer.
         install_args = [
             '-c', '{}'.format(self.catkin_dir), 
-            '-i', '{}'.format(self.install_dir), 
             '-p', '{}'.format(self.password),
+            '--is_base', is_base,
             '--openhmdrules', '{}'.format(self.get_resource('50-openhmd.rules')),
             '--viveconf', '{}'.format(self.get_resource('50-Vive.conf'))
         ]
@@ -385,12 +392,6 @@ class AppContext(ApplicationContext):
         file_dest = os.path.join(txtsphere_dest_dir, vive_launch)
         if not os.path.isfile(file_dest):
             copyfile(self.get_resource(vive_launch), file_dest)
-
-        # Set up network configurations via /etc/hostnames
-        if self.current_computer_is_robot == True:
-            is_base = "n"
-        else:
-            is_base = "y"
 
         ip_args = [
             '--is_base', is_base,

@@ -6,13 +6,7 @@
 # including installing the necessary system-wide dependencies and
 # installing ROS if not installed. All of the necessary catkin work-
 # space source code is installed here, although not all of the configuring
-# is done inside this script.
-# 
-# For a complete stand-alone bash installation, please see:
-# https://github.com/UTNuclearRoboticsPublic/ece-senior-design/tree/master/vive/install
-# 
-# The linked version above may become outdated and is considered deprecated and 
-# is replaced with this installer.
+# is done inside this script
 
 #####################################################################
 # Parse args
@@ -36,13 +30,13 @@ case $key in
     shift
     shift
     ;;
-    -i|--install)
-    INSTALL=$2
+    -p|--password)
+    PASSWORD=$2
     shift
     shift
     ;;
-    -p|--password)
-    PASSWORD=$2
+    --is_base)
+    IS_BASE=$2
     shift
     shift
     ;;
@@ -66,7 +60,7 @@ OPENHMDRULES_DEST="/etc/udev/rules.d/"
 VIVECONF_DEST="/usr/share/X11/xorg.conf.d/"
 BUILD="build"
 SRC="src"
-OPENHMD_INSTALL_DEST="$INSTALL/OpenHMD"
+OPENHMD_INSTALL_DEST="/usr/local/include/OpenHMD"
 
 mkdir -p "$CATKIN"/"$BUILD"
 mkdir -p "$CATKIN"/"$SRC"
@@ -80,7 +74,7 @@ echo "$PASSWORD" | sudo -S apt-get update && sudo apt-get -y install\
                         git\
                         libgtest-dev=1.7.0-4ubuntu1\
                         openssh-server\
-			sshpass\
+            			sshpass\
                         v4l-utils=1.10.0-1 2>&1
 
 #####################################################################
@@ -154,33 +148,36 @@ echo "$PASSWORD" | sudo -S apt-get update && sudo apt-get -y install\
                         libhidapi-dev \
                         freeglut3-dev
 
-# Install OpenHMD Lib inside our install folder
-if [ ! -d "$OPENHMD_INSTALL_DEST" ];
+# Install OpenHMD Lib in /usr/local/include if on robot, and put plugin 
+# in catkin workspace.
+if [ "$IS_BASE" == "y" ];
 then
-	echo "[INFO: $MYFILENAME $LINENO] Cloning OpenHMD Lib into $INSTALL."
-    git clone https://github.com/OpenHMD/OpenHMD.git "$OPENHMD_INSTALL_DEST" 
-    cd "$OPENHMD_INSTALL_DEST" || exit 1
-    git checkout 4ca169b49ab4ea4bee2a8ea519d9ba8dcf662bd5
-    cmake .
-    make
-    ./autogen.sh
-    ./configure
-    make
-    cd - || exit 1
-else
-    echo "[INFO: $MYFILENAME $LINENO] OpenHMD Lib is already cloned, skipping installation."
-fi
+    if [ ! -d "$OPENHMD_INSTALL_DEST" ];
+    then
+        echo "[INFO: $MYFILENAME $LINENO] Cloning OpenHMD Lib into $OPENHMD_INSTALL."
+        git clone https://github.com/OpenHMD/OpenHMD.git "$OPENHMD_INSTALL_DEST" 
+        cd "$OPENHMD_INSTALL_DEST" || exit 1
+        git checkout 4ca169b49ab4ea4bee2a8ea519d9ba8dcf662bd5
+        cmake .
+        make
+        ./autogen.sh
+        ./configure
+        make
+        cd - || exit 1
+    else
+        echo "[INFO: $MYFILENAME $LINENO] OpenHMD Lib is already cloned, skipping installation."
+    fi
 
-# Install the OpenHMD plugin
-if [ ! -d "$CATKIN"/"$SRC"/"$OPENHMD_PLUGIN_DEST" ];
-then
-	echo "[INFO: $MYFILENAME $LINENO] Cloning $OPENHMD_PLUGIN_DEST into $CATKIN/$SRC."
-    git clone https://github.com/UTNuclearRoboticsPublic/rviz_openhmd.git "$CATKIN"/"$SRC"/"$OPENHMD_PLUGIN_DEST" &&
-	echo "[INFO: $MYFILENAME $LINENO] $OPENHMD_PLUGIN_DEST cloned to $CATKIN/$SRC/$OPENHMD_PLUGIN_DEST"
-else
-    echo "[INFO: $MYFILENAME $LINENO] $OPENHMD_PLUGIN_DEST is already cloned, skipping installation."
+    # Install the OpenHMD plugin
+    if [ ! -d "$CATKIN"/"$SRC"/"$OPENHMD_PLUGIN_DEST" ];
+    then
+        echo "[INFO: $MYFILENAME $LINENO] Cloning $OPENHMD_PLUGIN_DEST into $CATKIN/$SRC."
+        git clone https://github.com/UTNuclearRoboticsPublic/rviz_openhmd.git "$CATKIN"/"$SRC"/"$OPENHMD_PLUGIN_DEST" &&
+        echo "[INFO: $MYFILENAME $LINENO] $OPENHMD_PLUGIN_DEST cloned to $CATKIN/$SRC/$OPENHMD_PLUGIN_DEST"
+    else
+        echo "[INFO: $MYFILENAME $LINENO] $OPENHMD_PLUGIN_DEST is already cloned, skipping installation."
+    fi
 fi
-
 #####################################################################
 # Vive and OpenHMD configuration
 #####################################################################
